@@ -135,6 +135,28 @@ func (js *jsonSampleImporter) Views(bucket string) bool {
 	return succeeded
 }
 
+func (js *jsonSampleImporter) Functions(bucket string) bool {
+	succeeded := true
+	for _, f := range js.sample.Files {
+		if f.IsDir() {
+			continue
+		}
+
+		if strings.HasPrefix(f.Path(), js.sample.FuncPath) {
+			clog.Log("Loading function %s", f.Path())
+			data, err := f.ReadFile()
+			if err != nil {
+				succeeded = false
+				clog.Error(err)
+				continue
+			}
+
+			fmt.Printf("%s\n", string(data))
+		}
+	}
+
+	return succeeded
+}
 func (js *jsonSampleImporter) Queries(bucket string) bool {
 	waitForN1QL, err := js.rest.hasN1qlService()
 	if err != nil {

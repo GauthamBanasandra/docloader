@@ -54,6 +54,11 @@ func (c *Context) Run() {
 	}
 
 	phaseErrors := make([]string, 0)
+	if !loader.Functions(c.bucket) {
+		loader.Close()
+		phaseErrors = append(phaseErrors, "function creation")
+	}
+
 	if !loader.CreateBucket(c.bucket, c.quota) {
 		loader.Close()
 		fmt.Printf("Bucket creation failed, see log for details\n")
