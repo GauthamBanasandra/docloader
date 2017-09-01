@@ -57,10 +57,10 @@ func (e HttpError) Error() string {
 		return fmt.Sprintf("Bad request executing %s %s due to %s",
 			e.method, e.resource, e.body)
 	case http.StatusUnauthorized:
-		return fmt.Sprintf("Authentication error executing \"%s %s\" "+
+		return fmt.Sprintf("Authentication error executing \"%s %s\" " +
 			"check username and password", e.method, e.resource)
 	case http.StatusInternalServerError:
-		return fmt.Sprintf("Internal server error while executing \"%s %s\" "+
+		return fmt.Sprintf("Internal server error while executing \"%s %s\" " +
 			"check the server logs for more details", e.method, e.resource)
 	default:
 		return fmt.Sprintf("Recieved error %d while executing \"%s %s\"",
@@ -91,6 +91,7 @@ type NodeServices struct {
 	FullText       int `json:"fts"`
 	SecondaryIndex int `json:"indexHttp"`
 	N1QL           int `json:"n1ql"`
+	Functions      int `json:"eventingAdminPort"`
 }
 
 type RestClient struct {
@@ -139,6 +140,37 @@ func (r *RestClient) PutViews(bucket, ddocName string, ddoc []byte) error {
 		return HttpError{resp.StatusCode, method, url, string(msg)}
 	}
 
+	return nil
+}
+
+func (r *RestClient) CreateFunction(appName string, depCfg []byte) error {
+	method := "POST"
+	host, err := r.functionsHost()
+	if err != nil {
+		return err
+	}
+
+	url := host + "/setApplication/?name=beersample"
+	fmt.Println(url)
+	req, err:=http.NewRequest(method, url, bytes.NewBuffer(depCfg))
+	if err != nil {
+		return RestClientError{method, url, err}
+	}
+	if r.username != "" || r.password != "" {
+		req.SetBasicAuth(r.username, r.password)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err:=r.executeRequest(req)
+	if err != nil {
+		return err
+	}
+	body, err:=ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Printf("Unable to read body %v", err)
+	}
+	fmt.Printf("%s\n", body)
 	return nil
 }
 
@@ -199,7 +231,7 @@ func (r *RestClient) CreateBucket(settings *BucketSettings) error {
 
 	data := []byte(settings.FormEncoded())
 
-	req, err := http.NewRequest(method, r.host+url, bytes.NewBuffer(data))
+	req, err := http.NewRequest(method, r.host + url, bytes.NewBuffer(data))
 	if err != nil {
 		return RestClientError{method, url, err}
 	}
@@ -385,6 +417,21 @@ func (r *RestClient) viewsHost() (string, error) {
 	}
 
 	return "", ServiceNotAvailableError{"views"}
+}
+
+func (r *RestClient) functionsHost() (string, error) {
+	nodes, err := r.GetClusterNodes()
+	if err != nil {
+		return "", err
+	}
+
+	for _, node := range nodes {
+		if node.Services.Functions != 0 {
+			return fmt.Sprintf("http://%s:%d", node.Hostname, node.Services.Functions), nil
+		}
+	}
+
+	return "", ServiceNotAvailableError{"eventing"}
 }
 
 func (r *RestClient) hasN1qlService() (bool, error) {

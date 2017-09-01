@@ -151,7 +151,7 @@ func (js *jsonSampleImporter) Functions(bucket string) bool {
 				continue
 			}
 
-			fmt.Printf("%s\n", string(data))
+			js.rest.CreateFunction("beer-sample", data)
 		}
 	}
 
