@@ -259,7 +259,7 @@ func (js *jsonSampleImporter) IterateDocs(bucket string, threads int) bool {
 				}
 
 				if filepath.Ext(f.Path()) == ".json" {
-					key = key[:len(key)-5]
+					key = key[:len(key) - 5]
 				}
 
 				atomic.AddUint64(&read, 1)
@@ -357,8 +357,10 @@ type SamplesReader struct {
 	closer       io.Closer
 	HasDocsPath  bool
 	HasDDocsPath bool
+	HasFuncPath  bool
 	DocsPath     string
 	DDocsPath    string
+	FuncPath     string
 	Files        []SamplesFile
 }
 
@@ -373,8 +375,10 @@ func OpenSamplesReader(path string) (*SamplesReader, error) {
 			closer:       closer,
 			HasDocsPath:  false,
 			HasDDocsPath: false,
+			HasFuncPath: false,
 			DocsPath:     "",
 			DDocsPath:    "",
+			FuncPath: "",
 			Files:        make([]SamplesFile, len(closer.File)),
 		}
 
@@ -382,7 +386,7 @@ func OpenSamplesReader(path string) (*SamplesReader, error) {
 			if file.FileInfo().IsDir() {
 				dname := file.Name
 				if strings.HasSuffix(dname, "/") {
-					dname = dname[0 : len(dname)-1]
+					dname = dname[0 : len(dname) - 1]
 				}
 				_, dir := filepath.Split(dname)
 
@@ -401,13 +405,21 @@ func OpenSamplesReader(path string) (*SamplesReader, error) {
 					rv.HasDDocsPath = true
 					rv.DDocsPath = file.Name
 				}
+
+				if dir == "functions" {
+					if rv.HasFuncPath {
+						return nil, fmt.Errorf("Samples zip file may only contain one functions directory")
+					}
+					rv.HasFuncPath = true
+					rv.FuncPath = file.Name
+				}
 			}
 			rv.Files[i] = &SamplesZipFile{
 				file: file,
 			}
 		}
 
-		if !rv.HasDocsPath && !rv.HasDDocsPath {
+		if !rv.HasDocsPath && !rv.HasDDocsPath && !rv.HasFuncPath {
 			rv.HasDocsPath = true
 			rv.DocsPath = "/"
 		}
@@ -418,8 +430,10 @@ func OpenSamplesReader(path string) (*SamplesReader, error) {
 			closer:       DirCloser{},
 			HasDocsPath:  false,
 			HasDDocsPath: false,
+			HasFuncPath: false,
 			DocsPath:     "",
 			DDocsPath:    "",
+			FuncPath: "",
 			Files:        make([]SamplesFile, 0),
 		}
 		err := filepath.Walk(path, rv.addFile)
@@ -443,7 +457,7 @@ func (r *SamplesReader) addFile(path string, f os.FileInfo, err error) error {
 		if f.IsDir() {
 			dname := path
 			if strings.HasSuffix(dname, string(os.PathSeparator)) {
-				dname = dname[0 : len(dname)-1]
+				dname = dname[0 : len(dname) - 1]
 			}
 			_, dir := filepath.Split(dname)
 
@@ -461,6 +475,14 @@ func (r *SamplesReader) addFile(path string, f os.FileInfo, err error) error {
 				}
 				r.HasDDocsPath = true
 				r.DDocsPath = path
+			}
+
+			if dir == "functions" {
+				if r.HasFuncPath {
+					return fmt.Errorf("Samples folder may only contain one functions directory")
+				}
+				r.HasFuncPath = true
+				r.FuncPath = path
 			}
 		}
 
