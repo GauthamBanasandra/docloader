@@ -151,12 +151,22 @@ func (js *jsonSampleImporter) Functions(bucket string) bool {
 				continue
 			}
 
-			js.rest.CreateFunction("beer-sample", data)
+			var configJson interface{}
+			err = json.Unmarshal(data, &configJson)
+			config := configJson.(map[string]interface{})
+			fmt.Println(config["appname"])
+
+			err = js.rest.CreateFunction(config["appname"].(string), data)
+			if err != nil {
+				clog.Error(err)
+				succeeded = false
+			}
 		}
 	}
 
 	return succeeded
 }
+
 func (js *jsonSampleImporter) Queries(bucket string) bool {
 	waitForN1QL, err := js.rest.hasN1qlService()
 	if err != nil {

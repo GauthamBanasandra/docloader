@@ -150,9 +150,9 @@ func (r *RestClient) CreateFunction(appName string, depCfg []byte) error {
 		return err
 	}
 
-	url := host + "/setApplication/?name=beersample"
+	url := host + "/setApplication/?name=" + appName
 	fmt.Println(url)
-	req, err:=http.NewRequest(method, url, bytes.NewBuffer(depCfg))
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(depCfg))
 	if err != nil {
 		return RestClientError{method, url, err}
 	}
@@ -162,15 +162,16 @@ func (r *RestClient) CreateFunction(appName string, depCfg []byte) error {
 
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err:=r.executeRequest(req)
+	resp, err := r.executeRequest(req)
 	if err != nil {
 		return err
 	}
-	body, err:=ioutil.ReadAll(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Printf("Unable to read body %v", err)
 	}
 	fmt.Printf("%s\n", body)
+
 	return nil
 }
 

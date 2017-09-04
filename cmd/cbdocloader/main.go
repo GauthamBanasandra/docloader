@@ -59,23 +59,23 @@ func (c *Context) Run() {
 		phaseErrors = append(phaseErrors, "function creation")
 	}
 
-	if !loader.CreateBucket(c.bucket, c.quota) {
-		loader.Close()
-		fmt.Printf("Bucket creation failed, see log for details\n")
-		os.Exit(1)
-	}
-
-	if !loader.Views(c.bucket) {
-		phaseErrors = append(phaseErrors, "view creation")
-	}
-
-	if !loader.Queries(c.bucket) {
-		phaseErrors = append(phaseErrors, "index creation")
-	}
-
-	if !loader.IterateDocs(c.bucket, c.threads) {
-		phaseErrors = append(phaseErrors, "data creation")
-	}
+	//if !loader.CreateBucket(c.bucket, c.quota) {
+	//	loader.Close()
+	//	fmt.Printf("Bucket creation failed, see log for details\n")
+	//	os.Exit(1)
+	//}
+	//
+	//if !loader.Views(c.bucket) {
+	//	phaseErrors = append(phaseErrors, "view creation")
+	//}
+	//
+	//if !loader.Queries(c.bucket) {
+	//	phaseErrors = append(phaseErrors, "index creation")
+	//}
+	//
+	//if !loader.IterateDocs(c.bucket, c.threads) {
+	//	phaseErrors = append(phaseErrors, "data creation")
+	//}
 
 	loader.Close()
 
