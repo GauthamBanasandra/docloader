@@ -137,6 +137,8 @@ func (js *jsonSampleImporter) Views(bucket string) bool {
 
 func (js *jsonSampleImporter) Functions(bucket string) bool {
 	succeeded := true
+	// Creating a bucket that is required by functions samples.
+	js.CreateBucket("functions-sample", 100)
 	for _, f := range js.sample.Files {
 		if f.IsDir() {
 			continue
@@ -154,7 +156,10 @@ func (js *jsonSampleImporter) Functions(bucket string) bool {
 			var configJson interface{}
 			err = json.Unmarshal(data, &configJson)
 			config := configJson.(map[string]interface{})
-			fmt.Println(config["appname"])
+			if config["appname"] == nil {
+				clog.Log("Unable to find app name")
+				continue
+			}
 
 			err = js.rest.CreateFunction(config["appname"].(string), data)
 			if err != nil {
